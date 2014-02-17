@@ -1,7 +1,7 @@
 wikitree-javascript-sdk
 =======================
 
-Javascript library for interacting with the WikiTree API functions
+Javascript library to work with the WikiTree API functions.
 
 ## Prerequisites
 * jQuery 1.10 or higher (may work with lower versions)
@@ -29,9 +29,13 @@ Javascript library for interacting with the WikiTree API functions
 	});
 
 </script>
-````
 
 ## Example
 
 The documentation here is incomplete as the SDK (and the API itself) are all in early development.
 The index.html file has a decent example of usage. 
+
+A hosted version is at: http://apps.wikitree.com/apps/casey1/wikitree-javascript-sdk/
+
+
+````
