@@ -35,6 +35,7 @@ wikitree.Session.prototype.checkLogin = function (opts){
 	if (opts && opts.user_id) { self.user_id = opts.user_id; }
 	if (opts && opts.user_name) { self.user_name = opts.user_name; }
 
+
 	var request = $.ajax({
 		url: wikitree.API_URL,
 		crossDomain: true,
@@ -50,8 +51,8 @@ wikitree.Session.prototype.checkLogin = function (opts){
 				$.cookie('wikitree_wtb_UserName', self.user_name);
 				self.loggedIn = true;
 			} else { 
-				$.cookie('wikitree_wtb_UserID', '');
-				$.cookie('wikitree_wtb_UserName', '');
+				//$.cookie('wikitree_wtb_UserID', '');
+				//$.cookie('wikitree_wtb_UserName', '');
 				self.loggedIn = false;
 			}
 		}, 
@@ -68,6 +69,7 @@ wikitree.Session.prototype.checkLogin = function (opts){
 	
 
 // Do an actual login through the server API with an Ajax call. 
+// This is for bots where the script has a built-in/known username/password.
 wikitree.Session.prototype.login = function(opts) {
 	var self = this;
 
@@ -100,11 +102,59 @@ wikitree.Session.prototype.login = function(opts) {
 
 		// On failed POST/server error, act like a failed login.
 		error: function(xhr, status) { 
-			this.user_id = 0;
-			this.user_name = '';
-			this.loggedin = false;
+			self.user_id = 0;
+			self.user_name = '';
+			self.loggedin = false;
 			$.cookie('wikitree_wtb_UserID', self.user_id);
 			$.cookie('wikitree_wtb_UserName', self.user_name);
+		}
+	});
+
+	return request.promise();
+	
+}
+
+
+// Do an actual login through the server API with an Ajax call. 
+// This is for interactive apps where we sent the user to wikitree.com to login and got
+// back an auth code to use for login here.
+wikitree.Session.prototype.clientLogin = function(opts) {
+	var self = this;
+
+	var authcode = (opts && opts.authcode) ? opts.authcode : '';
+
+	var request = $.ajax({
+		url: wikitree.API_URL,
+		crossDomain: true,
+		xhrFields: { withCredentials: true },
+		type: 'POST',
+		dataType: 'json',
+		data: { 'action': 'clientLogin', 'authcode': authcode },
+
+		// On successful POST return, check our data. Note from that data whether the login itself was
+		// successful (setting session cookies if so). Call the user callback function when done.
+		success: function(data) { 
+			if (data.clientLogin.result == 'Success') { 
+				self.user_id   = data.clientLogin.userid;
+				self.user_name = data.clientLogin.username;
+				self.loggedIn = true;
+				$.cookie('wikitree_wtb_UserID', self.user_id, {'path': '/'});
+				$.cookie('wikitree_wtb_UserName', self.user_name, {'path': '/'});
+			} else { 
+				self.loggedIn = false;
+				self.error = data.error;
+				$.cookie('wikitree_wtb_UserID', '', {'path': '/'});
+				$.cookie('wikitree_wtb_UserName', '', {'path': '/'});
+			}
+		}, 
+
+		// On failed POST/server error, act like a failed login.
+		error: function(xhr, status) { 
+			self.user_id = 0;
+			self.user_name = '';
+			self.loggedin = false;
+			$.cookie('wikitree_wtb_UserID', '', {'path': '/'});
+			$.cookie('wikitree_wtb_UserName', '', {'path': '/'});
 		}
 	});
 
@@ -179,6 +229,8 @@ wikitree.Person.prototype.load = function(opts){
 						for (var x in data[0].person) { 
 							self[x] = data[0].person[x];
 						}
+					} else { 
+						self.user_id = 0;
 					}
 					self.loaded = true;
 				},

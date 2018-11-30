@@ -97,33 +97,39 @@ logged_in {
 // In the ready() function we run some code when the DOM is ready to go.
 $(document).ready(function(){ 
 
-	wikitree.init({});
-	wikitree.session.checkLogin({})
-		.then(function(data) { 
-			if (wikitree.session.loggedIn) { 
-				$('#need_login').hide();
-				$('#logged_in').show();
-				walk(wikitree.session.user_id);
-			} else { 
-				$('#need_login').show();
-				$('#logged_in').hide();
-			}
-		});
+    wikitree.init({});
+    wikitree.session.checkLogin({})
+        .then(function(data) { 
+            if (wikitree.session.loggedIn) { 
+                /* We're already logged in and have a valid session. */
+                $('#need_login').hide();
+                $('#logged_in').show();
+            }           
+            else {      
+                /* We're not yet logged in, but maybe we've been returned-to with an auth-code */ 
+                var x = window.location.href.split('?');
+                var queryParams = new URLSearchParams( x[1] );
+                if (queryParams.has('authcode')) { 
+                    var authcode = queryParams.get('authcode');
+                    wikitree.session.clientLogin( {'authcode': authcode}  )
+                        .then(function(data) {  
+                            if (wikitree.session.loggedIn) { 
+                                /* If the auth-code was cood, redirect back to ourselves without the authcode in the URL (don't want it bookmarked, etc). */
+                                window.location = 'index.html';
+                            }                           
+                            else {                      
+                                $('#need_login').show();        
+                                $('#logged_in').hide();         
+                            }                           
+                        });                     
+                } else {        
+                    $('#need_login').show();
+                    $('#logged_in').hide();
+                }               
+            }           
+        });     
 
 });
-
-function tryLogin() { 
-	wikitree.session.login( {email: $('#wpEmail').val(), password: $('#wpPassword2').val() })
-		.then(function(data) {
-			if (wikitree.session.loggedIn) { 
-				$('#need_login').hide();
-				$('#logged_in').show();
-				walk(wikitree.session.user_id);
-			} else { 
-				alert("Login failed.");
-			}
-		});
-}
 
 // Given a user id, "walk" that user by retrieving their data and sticking it into the page.
 function walk(user_id) { 
@@ -196,9 +202,8 @@ function appsLogout() {
 <!-- This div is shown if the user is logged in. -->
 <div id="logged_in">
 	<p>
-	You appear to be logged in as WikiTree user <span class="user_name_label">?</span> (#<span class="user_id_label">?</span>). If this
-	is incorrect, please <span style="cursor:pointer;color:blue;text-decoration:underline;" onClick="appsLogout();">logout</span> and then sign back in.
-	You can "walk" through your family tree by clicking on the names below. The right-side will show the raw JSON output of the getPerson call used at each step.
+	You are logged in to WikiTree. You can <span style="cursor:pointer;color:blue;text-decoration:underline;" onClick="appsLogout();">logout</span>.
+	You can "walk" through your family tree by clicking on the names below. The right-side will show the raw JSON output of the Person.load and related calls used at each step.
 	Or you can return to <a href="http://apps.wikitree.com/apps/">Apps</a>.
 	</p>
 
@@ -223,11 +228,12 @@ function appsLogout() {
 <div id="need_login">
 	<p>
 	You are not currently logged in to apps.wikitree.com. In order to access your WikiTree ancestry, please sign in with your WikiTree.com credentials.
-	<form id="login" action="#" onSubmit='return false;'>
-		E-mail Address: <input type=text id="wpEmail" name="wpEmail"><br />
-		Password: <input type=password id="wpPassword2" name="wpPassword2"><br />
-		<input type=button value="Login" onClick="tryLogin()"/>
-	</form>
+    <form action="https://apps.wikitree.com/api.php" method="POST">
+    <input type="hidden" name="action" value="clientLogin">
+    <input type="hidden" name="returnURL" value="https://apps.wikitree.com/apps/casey1/wikitree-javascript-sdk/index.html">
+    <input type="submit" class="button" value="Client Login">
+    </form>
+
 	</p>
 </div>
 
