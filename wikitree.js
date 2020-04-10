@@ -8,7 +8,7 @@
 
 
 window.wikitree = window.wikitree || {};
-wikitree.API_URL = '/api.php';
+wikitree.API_URL = 'https://api.wikitree.com/api.php';
 
 
 /* ======================================================================
