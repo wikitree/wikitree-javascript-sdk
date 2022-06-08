@@ -1,6 +1,11 @@
 wikitree-javascript-sdk
 =======================
 
+
+
+# This library is obsolete. Better examples of working with the WikiTree API can be found in https://github.com/wikitree/wikitree-api.
+
+
 Javascript library to work with the WikiTree API functions.
 
 ## Prerequisites
